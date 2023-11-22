@@ -1,23 +1,41 @@
-// src/Tile.ts
-export class Tile {
-    x: number;
-    y: number;
-    size: number;
-    isSolid: boolean;
+export default class Tile {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  isSolid: boolean;
+  constructor(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    isSolid: boolean,
+  ) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.x = this.width * this.x;
+    this.y =  this.height * this.y;
+    this.isSolid = isSolid;
+  }
 
-    constructor(x: number, y: number, size: number, isSolid: boolean) {
-        this.x = x;
-        this.y = y;
-        this.size = size;
-        this.isSolid = isSolid;
-    }
+  draw(cameraPosition: {x:number,y:number}, ctx: CanvasRenderingContext2D): void {
+    if (this.isSolid) ctx.fillStyle = "red";
+    else ctx.fillStyle = "lightgreen";
 
-    checkCollision(otherX: number, otherY: number, otherSize: number): boolean {
-        return (
-            this.x < otherX + otherSize &&
-            this.x + this.size > otherX &&
-            this.y < otherY + otherSize &&
-            this.y + this.size > otherY
-        );
-    }
+    ctx.strokeStyle = "green";
+    ctx.fillRect(
+      cameraPosition.x + this.x,
+      cameraPosition.y + this.y,
+      this.width,
+      this.height,
+    );
+    ctx.strokeRect(
+      cameraPosition.x + this.x,
+      cameraPosition.y + this.y,
+      this.width,
+      this.height,
+    );
+  }
 }

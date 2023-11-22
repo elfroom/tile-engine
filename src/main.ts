@@ -1,100 +1,125 @@
-class Tile {
+import TileMap from "./TileMap.ts";
+import EventHandler from "./EventHandler.ts";
+import PhysicsEngine from "./PhysicsEngine.ts";
+type Vector2D = { x: number; y: number };
+
+class Monster {
   x: number;
   y: number;
   width: number;
   height: number;
-  isSolid: boolean;
-  constructor(
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    isSolid: boolean,
-  ) {
+  speed: number;
+  cameraPosition: { x: number; y: number };
+
+  constructor(x: number, y: number, size: number, speed: number) {
     this.x = x;
     this.y = y;
-    this.width = width;
-    this.height = height;
-    this.isSolid = isSolid;
+    this.width = size;
+    this.height = size;
+    this.speed = speed;
+    this.cameraPosition = { x: 0, y: 0 };
   }
 
-  draw(offset: { x: number; y: number }, ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = "lightgreen";
-    ctx.strokeStyle = "green";
-    ctx.fillRect(offset.x + this.x, offset.y + this.y, this.width, this.height);
-    ctx.strokeRect(
-      offset.x + this.x,
-      offset.y + this.y,
-      this.width,
-      this.height,
+  update(player: Player) {
+    // Implement logic for the monster to follow the player
+    const dx = player.x - this.x;
+    const dy = player.y - this.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Normalize the direction vector
+    const directionX = dx / distance;
+    const directionY = dy / distance;
+    this.x += directionX * this.speed;
+    this.y += directionY * this.speed;
+  }
+
+  draw(ctx: CanvasRenderingContext2D) {
+    // Implement drawing logic for the monster
+    const x = this.cameraPosition.x + this.x;
+    const y = this.cameraPosition.y + this.y;
+    ctx.fillStyle = "red";
+    ctx.fillRect(x, y, this.width, this.height);
+    ctx.fillText(
+      "(" + Math.floor(this.x) + "," + Math.floor(this.y) + ")",
+      x,
+      y,
     );
-  }
-}
-
-class TileMap {
-  tiles: Tile[];
-  tileSize = 32;
-  offset: { x: number; y: number };
-
-  constructor() {
-    this.tiles = [];
-    this.offset = { x: 100, y: 0 };
-
-    // fill with none solid rows and col hard codes
-    for (let row = 0; row < 20; row++) {
-      for (let col = 0; col < 10; col++) {
-        this.tiles.push(
-          new Tile(
-            row * this.tileSize,
-            col * this.tileSize,
-            this.tileSize,
-            this.tileSize,
-            false,
-          ),
-        );
-      }
-    }
-  }
-
-  draw(ctx: CanvasRenderingContext2D): void {
-    for (let i = 0; i < this.tiles.length; i++) {
-      this.tiles[i].draw(this.offset, ctx);
-    }
   }
 }
 
 class Player {
   x: number;
   y: number;
-  size: number;
-  movementVector: { x: number; y: number };
+  width: number;
+  height: number;
+  screenX: number;
+  screenY: number;
+  speed: number;
+  movementVector: Vector2D;
 
-  constructor(x: number, y: number, size: number) {
+  constructor(
+    x: number,
+    y: number,
+    screenX: number,
+    screenY: number,
+    size: number,
+  ) {
     this.x = x;
     this.y = y;
-    this.size = size;
+    this.speed = 6;
+    this.screenX = screenX;
+    this.screenY = screenY;
+    this.width = size;
+    this.height = size;
+    //this.cameraPosition = { x: 0, y: 0 };
     this.movementVector = { x: 0, y: 0 };
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = "black";
-    ctx.fillRect(this.x, this.y, this.size, this.size);
+    ctx.fillRect(this.screenX, this.screenY, this.width, this.height);
+    ctx.fillText(
+      "(" + Math.floor(this.x) + "," + Math.floor(this.y) + ")",
+      this.screenX,
+      this.screenY,
+    );
   }
 
   update(): void {
     if (this.movementVector.x != 0 || this.movementVector.y != 0) {
-      console.log("moving");
-      this.x += this.movementVector.x;
-      this.y += this.movementVector.y;
+      // work out next coord
+      this.x += this.movementVector.x * this.speed;
+      this.y += this.movementVector.y * this.speed;
     }
   }
 }
 
-class Game {
+class Item {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+
+  constructor() {
+    this.x = 0;
+    this.y = 0;
+    this.width = 5;
+    this.height = 5;
+  }
+  draw(camPos: { x: number; y: number }, ctx: CanvasRenderingContext2D) {
+    ctx.fillStyle = "pink";
+    ctx.fillRect(camPos.x + this.x, camPos.y + this.y, this.width, this.height);
+  }
+}
+
+export default class Game {
   width: number;
   height: number;
   tilemap: TileMap;
   player: Player;
+  items: Item[];
+  monster: Monster;
+  eventHandler: EventHandler;
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
 
@@ -103,8 +128,11 @@ class Game {
     this.height = height;
 
     this.tilemap = new TileMap();
-
-    this.player = new Player(20, 20, 16);
+    this.tilemap.tiles[55].isSolid = true;
+    this.player = new Player(100, 120, this.width / 2, this.height / 2, 16);
+    this.monster = new Monster(250, 250, 7, 3);
+    this.items = [];
+    this.items.push(new Item());
 
     this.canvas = document.createElement("canvas");
     this.canvas.width = width;
@@ -112,84 +140,60 @@ class Game {
     document.body.appendChild(this.canvas);
 
     this.ctx = this.canvas.getContext("2d")!;
+
+    this.eventHandler = new EventHandler(this);
   }
 
-  handleTouchStart(e: TouchEvent) {
-    e.preventDefault();
-    if (e.touches.length === 1) {
-      const touchX = e.touches[0].clientX;
-      const touchY = e.touches[0].clientY;
-      // diff between touch xy and player xy
-      const dx = touchX - this.player.x;
-      const dy = touchY - this.player.y;
-
-      //normalised vector
-      const length = Math.sqrt(dx * dx + dy * dy);
-      const normalizedDeltaX = dx / length;
-      const normalizedDeltaY = dy / length;
-      // Adjust the player's position based on the normalized vector
-      this.player.movementVector = {
-        x: normalizedDeltaX,
-        y: normalizedDeltaY,
-      };
-      // move camera
-    }
-  }
-
-  handleTouchMove(e: TouchEvent) {
-    e.preventDefault();
-    if (e.touches.length === 1) {
-      const touchX = e.touches[0].clientX;
-      const touchY = e.touches[0].clientY;
-      // diff between touch xy and player xy
-      const dx = touchX - this.player.x;
-      const dy = touchY - this.player.y;
-
-      //normalised vector
-      const length = Math.sqrt(dx * dx + dy * dy);
-      const normalizedDeltaX = dx / length;
-      const normalizedDeltaY = dy / length;
-      // Adjust the player's position based on the normalized vector
-      this.player.movementVector = {
-        x: normalizedDeltaX,
-        y: normalizedDeltaY,
-      };
-    }
-  }
-
-  handleTouchEnd(e: TouchEvent) {
-    if (e.touches.length == 0) {
-      this.player.movementVector = { x: 0, y: 0 };
-    }
-  }
   gameLoop() {
-    this.tilemap.draw(this.ctx);
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.width, this.height);
+    // draw tilemap
+    const cameraPos = {
+      x: this.player.screenX - this.player.x,
+      y: this.player.screenY - this.player.y,
+    };
+    this.tilemap.cameraPosition = cameraPos;
+    this.tilemap.draw(ctx);
     this.player.update();
-    this.player.draw(this.ctx);
+    this.player.draw(ctx);
+    this.monster.cameraPosition = cameraPos;
+    this.monster.draw(ctx);
+    this.monster.update(this.player);
+    this.items[0].draw(cameraPos, ctx);
+
+    // Check for collision between player and monster
+    if (PhysicsEngine.detectCollision(this.player, this.monster)) {
+      PhysicsEngine.handleCollision(this.monster, this.player);
+    }
+
+    // collisions for solid gilss
+    this.tilemap.tiles.forEach((tile) => {
+      if (!tile.isSolid) return;
+      // for player
+      if (PhysicsEngine.detectCollision(this.player, tile)) {
+        PhysicsEngine.handleCollision(this.player, tile);
+      }
+      // for monster
+      if (PhysicsEngine.detectCollision(this.monster, tile)) {
+        PhysicsEngine.handleCollision(this.monster, tile);
+      }
+    });
 
     window.requestAnimationFrame(() => this.gameLoop());
   }
 
   start() {
-    this.canvas.addEventListener(
-      "touchstart",
-      this.handleTouchStart.bind(this),
-      false,
-    );
-    //comma
-    this.canvas.addEventListener(
-      "touchend",
-      this.handleTouchEnd.bind(this),
-      false,
-    );
-    this.canvas.addEventListener(
-      "touchmove",
-      this.handleTouchMove.bind(this),
-      false,
-    );
+    const cameraPos = {
+      x: this.player.screenX - this.player.x,
+      y: this.player.screenY - this.player.y,
+    };
+    this.tilemap.cameraPosition = cameraPos;
+
+    this.eventHandler.init();
+
     this.gameLoop();
   }
 }
 
-const game = new Game(300, 300);
+const game = new Game(400, 400);
 game.start();
