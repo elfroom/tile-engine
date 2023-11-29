@@ -1,5 +1,5 @@
-import Game from "./main.ts";
-import PhysicsEngine from "./PhysicsEngine.ts";
+import Game from "./main";
+import PhysicsEngine from "./PhysicsEngine";
 export default class EventHandler {
   game: Game;
   touchDown: boolean;
@@ -12,18 +12,18 @@ export default class EventHandler {
 
   init() {
     this.game.canvas.addEventListener(
-      "touchstart",
+      "pointerdown",
       this.handleTouchStart.bind(this),
       false,
     );
     //comma
     this.game.canvas.addEventListener(
-      "touchend",
+      "pointerup",
       this.handleTouchEnd.bind(this),
       false,
     );
     window.addEventListener(
-      "touchmove",
+      "pointermove",
       this.handleTouchMove.bind(this),
       false,
     );
@@ -45,9 +45,9 @@ export default class EventHandler {
       y: normalizedDeltaY,
     };
   }
-  handleTouchDown(e: TouchEvent) {
-    const touchX = e.touches[0].clientX;
-    const touchY = e.touches[0].clientY;
+  handleTouchDown(e: PointerEvent) {
+    const touchX = e.x;
+    const touchY = e.y;
 
     setTimeout(() => {
       if (!this.touchDown) {
@@ -81,32 +81,28 @@ export default class EventHandler {
           this.game.tilemap.tiles[tileIndex].isSolid = true;
         }
       } else {
-        if (e.touches.length === 1) {
-          this.handleOneTouch(touchX, touchY);
-        }
+        this.handleOneTouch(touchX, touchY);
       }
     }, 250);
   }
-  handleTouchStart(e: TouchEvent) {
+  handleTouchStart(e: PointerEvent) {
     e.preventDefault();
     this.touchDown = true;
     this.handleTouchDown(e);
   }
 
-  handleTouchMove(e: TouchEvent) {
+  handleTouchMove(e: PointerEvent) {
     e.preventDefault();
-    const touchX = e.touches[0].clientX;
-    const touchY = e.touches[0].clientY;
-    if (e.touches.length === 1) {
+    const touchX = e.x;
+    const touchY = e.y;
+    if (this.touchDown) {
       this.handleOneTouch(touchX, touchY);
     }
   }
 
-  handleTouchEnd(e: TouchEvent) {
-    if (e.touches.length == 0) {
-      this.game.player.movementVector = { x: 0, y: 0 };
-      this.touchDown = false;
-    }
+  handleTouchEnd(e: PointerEvent) {
+    this.game.player.movementVector = { x: 0, y: 0 };
+    this.touchDown = false;
   }
 
   handleKeyDown(e: KeyboardEvent) {

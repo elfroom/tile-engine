@@ -1,6 +1,6 @@
-import TileMap from "./TileMap.ts";
-import EventHandler from "./EventHandler.ts";
-import PhysicsEngine from "./PhysicsEngine.ts";
+import TileMap from "./TileMap";
+import EventHandler from "./EventHandler";
+import PhysicsEngine from "./PhysicsEngine";
 import { Player } from "./Player";
 import { Monster } from "./Monster";
 import { Item } from "./Item";
