@@ -1,16 +1,16 @@
-import Tile from "./Tile.ts"
+import Tile from "./Tile.ts";
 
 export default class TileMap {
   tiles: Tile[];
-  tileSize = 40;
+  tileSize = 32;
   rows: number;
   cols: number;
-  cameraPosition: {x:number,y:number};
+  cameraPosition: { x: number; y: number };
 
   constructor() {
     this.tiles = [];
-    this.rows = 20;
-    this.cols = 20;
+    this.rows = 10;
+    this.cols = 10;
     this.cameraPosition = { x: 0, y: 0 };
 
     // fill with none solid rows and col hard codes
@@ -40,25 +40,25 @@ export default class TileMap {
       this.tiles[i].draw(this.cameraPosition, ctx);
     }
   }
-  
-  getCollision(x:number,y:number,width:number,height:number){
-     const collidedTiles = this.tiles.filter((tile) => {
+
+  getCollision(x: number, y: number, width: number, height: number) {
+    const collidedTiles = this.tiles.filter((tile) => {
       const tileLeft = tile.x * this.tileSize;
       const tileRight = (tile.x + 1) * this.tileSize;
       const tileTop = tile.y * this.tileSize;
       const tileBottom = (tile.y + 1) * this.tileSize;
-      
+
       const playerLeft = x;
       const playerRight = x + width;
       const playerTop = y;
       const playerBottom = y + height;
-      
+
       return (
-      tile.isSolid &&
-      playerLeft < tileRight &&
-      playerRight > tileLeft &&
-      playerTop < tileBottom &&
-      playerBottom > tileTop
+        tile.isSolid &&
+        playerLeft < tileRight &&
+        playerRight > tileLeft &&
+        playerTop < tileBottom &&
+        playerBottom > tileTop
       );
     });
     return collidedTiles;

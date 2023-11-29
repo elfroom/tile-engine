@@ -12,19 +12,20 @@ export default class Game {
   tilemap: TileMap;
   player: Player;
   items: Item[];
-  monster: Monster;
+  monsters: Monster[];
   eventHandler: EventHandler;
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
 
   constructor(width: number, height: number) {
-    this.width = width;
-    this.height = height;
+    this.width = window.innerWidth;
+    this.height = window.innerHeight;
 
     this.tilemap = new TileMap();
     this.tilemap.tiles[55].isSolid = true;
     this.player = new Player(100, 120, this.width / 2, this.height / 2, 16);
-    this.monster = new Monster(250, 250, 7, 3);
+    this.monsters = [];
+    this.monsters.push(new Monster(250, 250, 7, 2));
     this.items = [];
     this.items.push(new Item());
 
@@ -50,16 +51,23 @@ export default class Game {
     this.tilemap.draw(ctx);
     this.player.update();
     this.player.draw(ctx);
-    this.monster.cameraPosition = cameraPos;
-    this.monster.draw(ctx);
-    this.monster.update(this.player);
-    this.items[0].draw(cameraPos, ctx);
+    this.monsters.forEach((monster) => {
+      monster.update(this.player);
+      monster.cameraPosition = cameraPos;
+      monster.draw(ctx);
+    });
 
-    // Check for collision between player and monster
-    if (PhysicsEngine.detectCollision(this.player, this.monster)) {
-      PhysicsEngine.handleCollision(this.monster, this.player);
-    }
+    this.items.forEach((item) => {
+      item.draw(cameraPos, ctx);
+    });
 
+    // collision for player and items
+    const itemIndex = this.items.findIndex((item) => {
+      if (PhysicsEngine.detectCollision(this.player, item)) {
+        return true;
+      }
+    });
+    if (itemIndex !== -1) this.items.splice(itemIndex - 1, 1);
     // collisions for solid gilss
     this.tilemap.tiles.forEach((tile) => {
       if (!tile.isSolid) return;
@@ -68,9 +76,11 @@ export default class Game {
         PhysicsEngine.handleCollision(this.player, tile);
       }
       // for monster
-      if (PhysicsEngine.detectCollision(this.monster, tile)) {
-        PhysicsEngine.handleCollision(this.monster, tile);
-      }
+      this.monsters.forEach((monster) => {
+        if (PhysicsEngine.detectCollision(monster, tile)) {
+          PhysicsEngine.handleCollision(monster, tile);
+        }
+      });
     });
 
     window.requestAnimationFrame(() => this.gameLoop());

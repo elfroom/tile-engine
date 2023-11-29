@@ -12,6 +12,13 @@ export default class EventHandler {
 
   init() {
     this.game.canvas.addEventListener(
+      "touchstart",
+      (e) => {
+        e.preventDefault();
+      },
+      false,
+    );
+    this.game.canvas.addEventListener(
       "pointerdown",
       this.handleTouchStart.bind(this),
       false,
@@ -32,8 +39,8 @@ export default class EventHandler {
   }
 
   handleOneTouch(touchX: number, touchY: number): void {
-    const dx = touchX - this.game.width / 2;
-    const dy = touchY - this.game.height / 2;
+    const dx = touchX - this.game.player.screenX;
+    const dy = touchY - this.game.player.screenY;
 
     // normalised vector from above code
     const length = Math.sqrt(dx * dx + dy * dy);
@@ -55,17 +62,27 @@ export default class EventHandler {
         const worldX = Math.floor(touchX - this.game.tilemap.cameraPosition.x);
         const worldY = Math.floor(touchY - this.game.tilemap.cameraPosition.y);
 
+        // creating rect around mouse to detect collision // would rather use physics
+        // or create a bounding box around the player to detect attack
         const touchBoundary = {
-          x: worldX - 20,
-          y: worldY - 20,
-          width: 40,
-          height: 40,
+          x: this.game.player.x - 40,
+          y: this.game.player.y - 40,
+          width: 80,
+          height: 80,
         };
-        if (PhysicsEngine.detectCollision(this.game.monster, touchBoundary)) {
-          this.game.monster.x += this.touchVector.x * 20;
-          this.game.monster.y += this.touchVector.y * 20;
-          console.log("hit");
-        }
+        this.game.monsters.forEach((monster) => {
+          if (PhysicsEngine.detectCollision(monster, touchBoundary)) {
+            monster.x -= monster.moveVector.x * 120;
+            monster.y -= monster.moveVector.y * 120;
+            monster.health -= 1;
+            if (monster.health < 0) {
+              monster.x = -10;
+              monster.y = -10;
+            }
+            console.log("hit");
+          }
+        });
+
         return;
         const tileIndex = this.game.tilemap.tiles.findIndex((tile) => {
           return (
@@ -83,16 +100,14 @@ export default class EventHandler {
       } else {
         this.handleOneTouch(touchX, touchY);
       }
-    }, 250);
+    }, 100);
   }
   handleTouchStart(e: PointerEvent) {
-    e.preventDefault();
     this.touchDown = true;
     this.handleTouchDown(e);
   }
 
   handleTouchMove(e: PointerEvent) {
-    e.preventDefault();
     const touchX = e.x;
     const touchY = e.y;
     if (this.touchDown) {

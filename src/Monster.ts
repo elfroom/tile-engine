@@ -1,4 +1,5 @@
 import { Player } from "./Player";
+import PhysicsEngine from "./PhysicsEngine";
 
 export class Monster {
   x: number;
@@ -6,7 +7,9 @@ export class Monster {
   width: number;
   height: number;
   speed: number;
+  health: number;
   cameraPosition: { x: number; y: number };
+  moveVector: { x: number; y: number };
 
   constructor(x: number, y: number, size: number, speed: number) {
     this.x = x;
@@ -14,7 +17,9 @@ export class Monster {
     this.width = size;
     this.height = size;
     this.speed = speed;
+    this.health = 10;
     this.cameraPosition = { x: 0, y: 0 };
+    this.moveVector = { x: 0, y: 0 };
   }
 
   update(player: Player) {
@@ -24,10 +29,14 @@ export class Monster {
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     // Normalize the direction vector
-    const directionX = dx / distance;
-    const directionY = dy / distance;
-    this.x += directionX * this.speed;
-    this.y += directionY * this.speed;
+    this.moveVector.x = dx / distance;
+    this.moveVector.y = dy / distance;
+    this.x += this.moveVector.x * this.speed;
+    this.y += this.moveVector.y * this.speed;
+
+    if (PhysicsEngine.detectCollision(player, this)) {
+      PhysicsEngine.handleCollision(this, player);
+    }
   }
 
   draw(ctx: CanvasRenderingContext2D) {
